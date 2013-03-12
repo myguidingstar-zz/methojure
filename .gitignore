@@ -3,6 +3,8 @@ pom.xml
 /lib/
 /classes/
 /targets/
+/**/target/
+/**/client/resources/public/js/
 .lein-deps-sum
 
 # Emacs

@@ -13,8 +13,11 @@
 
   :plugins [[lein-cljsbuild "0.3.0"]]
 
+  :hooks [leiningen.cljsbuild]
+
   :cljsbuild {:builds
               [{:source-paths ["client/src"],
+                :jar true
                 :compiler
                 {:pretty-print true,
                  :output-to "client/resources/public/js/main-debug.js",

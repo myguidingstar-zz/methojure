@@ -5,4 +5,4 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[methojure/sockjs "0.1.0-SNAPSHOT"]]
   :plugins [[lein-sub "0.2.4"]]
-  :sub ["methojure-sockjs"])
+  :sub ["methojure-sockjs" "methojure-test"])

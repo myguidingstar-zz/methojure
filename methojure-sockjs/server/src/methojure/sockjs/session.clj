@@ -85,7 +85,7 @@
              (server/open? @channel)
              (in-response-limit? this))
       (let [msg (-> msg format-message fmt)]
-        (server/send! @channel msg)
+        (server/send! @channel msg false)
         (swap! bytes-send + (count msg))
         (when-not (in-response-limit? this)
           (server/close @channel)))
@@ -110,7 +110,7 @@
     (start-heatbeat this)
     (doseq [m @buffer
             :let [msg (-> m format-message fmt)]]
-      (server/send! ch msg)
+      (server/send! ch msg false)
       (swap! buffer rest))
     this))
 

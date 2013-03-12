@@ -85,7 +85,8 @@
                        (f/h-sid req opts)
                        (f/h-no-cache req opts)
                        (f/xhr-cors req opts)
-                       (f/status-200 req opts)))
+                       (f/status-200 req opts))
+                  false)
     ;; register the new channel
     (if-not (session/session? session-id)
       (let [s (session/create-streaming-session
@@ -116,7 +117,8 @@
                                       "text/event-stream; charset=UTF-8"}
                             :body "\r\n"}
                            (f/h-sid req opts)
-                           (f/h-no-cache req opts)))
+                           (f/h-no-cache req opts))
+                      false)
         (initialize-session s channel sockjs-handler))
       (session/register-new-channel! session-id channel))))
 
@@ -126,7 +128,7 @@
   (server/with-channel req channel
     ;; optional send a preclude
     (when preclude
-      (server/send! channel preclude))
+      (server/send! channel preclude false))
     ;; register the new channel
     (if-not (session/session? session-id)
       (let [s (session/create-polling-session
@@ -219,7 +221,8 @@
                                              "{{ callback }}" cb)}
                             (f/h-sid req opts)
                             (f/h-no-cache req opts)
-                            (f/status-200 req opts)))
+                            (f/status-200 req opts))
+                       false)
          (if-not (session/session? session-id)
            (let [s (session/create-streaming-session
                     session-id fmt-f

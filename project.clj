@@ -9,4 +9,5 @@
   :plugins [[lein-sub "0.2.4"]]
   
   :sub ["methojure-sockjs"
-        "methojure-test"])
+        "methojure-test"
+        "methojure-communication"])

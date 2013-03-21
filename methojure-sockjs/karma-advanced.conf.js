@@ -9,8 +9,7 @@ basePath = '';
 // list of files / patterns to load in the browser
 files = [
   'client/resources/lib/sockjs-0.3.4.js',
-  'client/resources/public/js/test-debug.js'
-  //'client/resources/public/js/test-optimized.js'
+  'client/resources/public/js/test-optimized.js'
 ];
 
 

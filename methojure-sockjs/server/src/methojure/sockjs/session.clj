@@ -23,12 +23,14 @@
   (condp = (:type msg)
     :open "o"
     :close (str "c[" (:close-number msg) ",\"" (:close-reason msg) "\"]")
-    :msg (str "a[" (cond
-                    (sequential? (:content msg))
-                    ,(cstr/join "," (map json/generate-string (:content msg)))
-                    :else (json/generate-string (:content msg)))
-              "]")
-    :heatbeat "h"))
+    :heatbeat "h"
+    (str "a[" (if (map? msg)
+                (cond
+                 (sequential? (:content msg))
+                 ,(cstr/join "," (map json/generate-string (:content msg)))
+                 :else (json/generate-string (:content msg)))
+                msg)
+              "]")))
 
 (defprotocol PSession
   (send! [this msg])

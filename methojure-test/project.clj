@@ -34,4 +34,12 @@
                 {:pretty-print false,
                  :output-to "client/resources/public/js/test-optimized.js",
                  :optimizations :advanced},
-                :id "test-advanced"}]})
+                :id "test-advanced"}]
+
+              :test-commands
+              {"test" [~(str (.getParent (clojure.java.io/file *file*))
+                             "/bin/test.sh")]
+               
+               "test-advanced" [~(str (.getParent (clojure.java.io/file *file*))
+                                      "/bin/test.sh")
+                                "--config" "karma-advanced.conf.js"]}})

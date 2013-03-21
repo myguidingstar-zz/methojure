@@ -46,7 +46,8 @@
 
 ;; use this for development
 (defn -main []
-  (start-server))
+  (start-server)
+  (println "Protocol test server started."))
 
 (deftest run-python-protocol-test
   (let [server (start-server)]

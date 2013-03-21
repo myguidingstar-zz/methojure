@@ -26,5 +26,5 @@
 (defn send! [handler msg]
   (.send handler msg))
 
-(defn close! [handler code reason]
+(defn close! [handler & [code reason]]
   (.close handler code reason))

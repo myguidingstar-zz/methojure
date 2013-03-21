@@ -131,7 +131,7 @@
 
 
 (defn initialize-testacular []
-  (let [testacular (aget js/window "__testacular__")]
+  (let [testacular (aget js/window "__karma__")]
     (aset testacular "start" (testacular-runner testacular))
     (aset js/window "dump"
           (testacular-dump

@@ -42,6 +42,14 @@
                  :externs ["client/resouces/externs/sockjs.js"],
                  :optimizations :advanced,
                  },
-                :id "test-advanced"}]}
+                :id "test-advanced"}]
+
+              :test-commands
+              {"test" [~(str (.getParent (clojure.java.io/file *file*))
+                             "/bin/test.sh")]
+               
+               "test-advanced" [~(str (.getParent (clojure.java.io/file *file*))
+                                      "/bin/test.sh")
+                                "--config" "karma-advanced.conf.js"]}}
 
   :profiles {:dev {:dependencies [[ring/ring-devel "1.1.8"]]}})

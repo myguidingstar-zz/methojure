@@ -3,6 +3,10 @@
   :url "https://github.com/jenshaase/methojure"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[methojure/sockjs "0.1.0-SNAPSHOT"]]
+  
+  :dependencies [[org.clojure/clojure "1.5.0"]]
+  
   :plugins [[lein-sub "0.2.4"]]
-  :sub ["methojure-sockjs" "methojure-test"])
+  
+  :sub ["methojure-sockjs"
+        "methojure-test"])

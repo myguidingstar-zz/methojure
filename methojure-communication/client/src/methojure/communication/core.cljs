@@ -8,15 +8,20 @@
 
 ;; Middleware
 (def ^:dynamic *default-stream* nil)
+(def ^:dynamic *send-middleware* nil)
 
-(defn methojure-stream [url middleware]
+(defn methojure-stream [url middleware send-middleware]
   (let [conn (stream/initialize-connection (stream/create-connection url))]
     (set! *default-stream* conn)
+    (set! *send-middleware* send-middleware)
     (stream/on conn :reset (fn [] (middleware {:event :reset})))
     (stream/on conn :message
                (fn [session msg]
                  (middleware (merge @session
                                     {:event :message :message msg}))))))
+
+(defn send! [msg]
+  (stream/send! *default-stream* (*send-middleware* msg)))
 
 ;; EDN reader
 
@@ -27,6 +32,9 @@
     (handler (if (= :message (:event event))
                (update-in event [:message] reader/read-string)
                event))))
+
+(defn wrap-edn-send [handler]
+  (fn [message] (pr-str message)))
 
 (defn wrap-log-errors
   "logs each error to the console."
@@ -50,12 +58,10 @@
       (f (:result msg)))
     (swap! callbacks dissoc (:id msg))))
 
-(declare send-msg)
-
 (defn- on-action-reset []
   (when-not (empty? @msg-buffer)
     (doseq [m @msg-buffer]
-      (send-msg m))
+      (send! m))
     (reset! msg-buffer [])))
 
 (defn wrap-action [handler]
@@ -68,9 +74,6 @@
 
 ;; Action API
 
-(defn send-msg [msg]
-  (stream/send! *default-stream* (pr-str msg)))
-
 (defn call-action [f name & args]
   (let [id (next-id)
         msg {:type :action
@@ -80,7 +83,7 @@
     (swap! callbacks assoc id f)
     (if-not (stream/connected? *default-stream*)
       (swap! msg-buffer conj msg)
-      (send-msg msg))))
+      (send! msg))))
 
 
 ;; PubSub
@@ -125,6 +128,7 @@
 ;; default middleware
 
 (def empty-handler (fn [event] nil))
+(def empty-handler-send (fn [msg] msg))
 
 (defn wrap-communication [handler]
   (-> handler
@@ -132,6 +136,14 @@
       (wrap-action)
       (wrap-edn)))
 
+(defn wrap-communication-send [handler]
+  (-> handler
+      (wrap-edn-send)))
+
 (def default-middleware
   (-> empty-handler
       (wrap-communication)))
+
+(def default-middleware-send
+  (-> empty-handler-send
+      (wrap-communication-send)))

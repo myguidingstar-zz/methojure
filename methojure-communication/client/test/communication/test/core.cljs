@@ -9,7 +9,8 @@
 ;; initialize communication
 (comm/methojure-stream
  "/sockjs"
- comm/default-middleware)
+ comm/default-middleware
+ comm/default-middleware-send)
 
 ;; define method names
 

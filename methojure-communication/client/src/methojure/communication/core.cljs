@@ -2,12 +2,46 @@
   (:require [methojure.communication.stream :as stream]
             [cljs.reader :as reader]))
 
+;; id generation
+(def id (atom 0))
+(defn- next-id [] (swap! id inc))
+
+;; Middleware
+(def ^:dynamic *default-stream* nil)
+
+(defn methojure-stream [url middleware]
+  (let [conn (stream/initialize-connection (stream/create-connection url))]
+    (set! *default-stream* conn)
+    (stream/on conn :reset (fn [] (middleware {:event :reset})))
+    (stream/on conn :message
+               (fn [session msg]
+                 (middleware (merge @session
+                                    {:event :message :message msg}))))))
+
+;; EDN reader
+
+(defn wrap-edn
+  "parse each message as edn"
+  [handler]
+  (fn [event]
+    (handler (if (= :message (:event event))
+               (update-in event [:message] reader/read-string)
+               event))))
+
+(defn wrap-log-errors
+  "logs each error to the console."
+  [handler]
+  (fn [event]
+    (when (and (= (:event event) :message)
+               (= :error (-> event :message :type)))
+      (let [{:keys [code reason details]} (:message event)]
+        (.warn js/console code reason details)))
+    (handler event)))
+
+;; Action middleware
+
 (def callbacks (atom {}))
 
-(defn- register-callback [id f]
-  (swap! callbacks assoc id f))
-
-;; store messages 
 (def msg-buffer (atom []))
 
 (defn- on-action-message [session msg]
@@ -16,39 +50,23 @@
       (f (:result msg)))
     (swap! callbacks dissoc (:id msg))))
 
-(defn- on-publish-message [session msg]
-  (when-let [f (@callbacks (:id msg))]
-    (f (:old msg) (:new msg))))
-
-(defn- on-error-message [session msg]
-  (.warn js/console (:reason msg) (:details msg)))
-
-(defn- on-message [session msg]
-  (let [msg (reader/read-string msg)]
-    (condp = (:type msg)
-      :action (on-action-message session msg)
-      :publish (on-publish-message session msg)
-      :error (on-error-message session msg)
-      nil)))
-
 (declare send-msg)
 
-(defn- on-reset []
+(defn- on-action-reset []
   (when-not (empty? @msg-buffer)
     (doseq [m @msg-buffer]
       (send-msg m))
     (reset! msg-buffer [])))
 
-(defn initial-stream []
-  (let [s (stream/create-stream "/sockjs")]
-    (stream/on s :reset on-reset)
-    (stream/on s :message on-message)
-    s))
+(defn wrap-action [handler]
+  (fn [event]
+    (condp = (:event event)
+      :reset (on-action-reset)
+      :message (when (= :action (-> event :message :type))
+                 (on-action-message event (:message event))))
+    (handler event)))
 
-(def ^:dynamic *default-stream* (initial-stream))
-
-(def id (atom 0))
-(defn- next-id [] (swap! id inc))
+;; Action API
 
 (defn send-msg [msg]
   (stream/send! *default-stream* (pr-str msg)))
@@ -59,7 +77,7 @@
              :id id
              :name name
              :args args}]
-    (register-callback id f)
+    (swap! callbacks assoc id f)
     (if-not (stream/connected? *default-stream*)
       (swap! msg-buffer conj msg)
       (send-msg msg))))
@@ -67,11 +85,53 @@
 
 ;; PubSub
 
-(defn subscribe [topic f]
-  (let [id (next-id)
-        sub-handler (fn [res]
-                      ;; TODO: check if it was successfully and
-                      ;; call with initial value
-                      )]
-    (register-callback id f)
-    (call-action sub-handler :subscribe topic id)))
+(def subscription-callbacks (atom {}))
+
+(defn- on-publish-message
+  "call the publish callback"
+  [session msg]
+  (when (= :publish (:type msg))
+    (when-let [[_ f] (get-in @subscription-callbacks [(:topic msg) (:id msg)])]
+      (f (:old msg) (:new msg)))))
+
+(defn- on-publish-reset
+  "resubscribe to all channels when we reconnect. "
+  []
+  (doseq [[topic topic-subs] @subscription-callbacks]
+    (doseq [[id [on-sub _]] topic-subs]
+      (call-action on-sub :methojure.communication.core/subscribe topic id))))
+
+(defn wrap-pubsub [handler]
+  (fn [event]
+    (condp = (:event event)
+      :reset (on-publish-reset)
+      :message (on-publish-message event (:message event)))
+    (handler event)))
+
+;; PubSub API
+
+(defn subscribe [topic on-subscribe on-publish]
+  (let [id (next-id)]
+    (swap! subscription-callbacks assoc-in [topic id] [on-subscribe on-publish])
+    (call-action on-subscribe
+                 :methojure.communication.core/subscribe topic id)
+    id))
+
+(defn unsubscribe [topic id on-success]
+  (swap! subscription-callbacks assoc-in [topic id] nil)
+  (call-action on-success :methojure.communication.core/unsubscribe topic id))
+
+
+;; default middleware
+
+(def empty-handler (fn [event] nil))
+
+(defn wrap-communication [handler]
+  (-> handler
+      (wrap-pubsub)
+      (wrap-action)
+      (wrap-edn)))
+
+(def default-middleware
+  (-> empty-handler
+      (wrap-communication)))

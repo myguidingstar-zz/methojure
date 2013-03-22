@@ -17,7 +17,8 @@
 (defmacro defaction [fn-name params* & body]
   `(do
      (defn ~fn-name ~params* ~@body)
-     (swap! registered-actions assoc ~(keyword fn-name) ~fn-name)))
+     (swap! registered-actions assoc
+            ~(keyword (str *ns* "/" fn-name)) ~fn-name)))
 
 (defn error [code reason & [details]]
   {:type :error
@@ -57,7 +58,8 @@
      (defn ~fn-name ~params*
        {:post [publishable?]}
        ~@body)
-     (swap! channels assoc ~(keyword fn-name) ~fn-name)))
+     (swap! channels assoc
+            ~(keyword (str *ns* "/" fn-name)) ~fn-name)))
 
 (defn- unsubscribe! [ch-name id sub-id]
   (if-let [ch (get-in subscriptions [ch-name id sub-id])]
@@ -74,6 +76,7 @@
       (unsubscribe! ch-name sid sub-id)
       ;; send message to client.
       (let [msg {:type :publish
+                 :topic ch-name
                  :id sub-id
                  :old old
                  :new new}]

@@ -1,5 +1,6 @@
 (ns methojure.test.macros
-  (:require [cljs.analyzer :refer (*cljs-ns*)]))
+  (:require [cljs.analyzer :refer (*cljs-ns*)]
+            [clojure.template :as temp]))
 
 (defmacro before-each [& body]
   `(methojure.test.core/before-each ~(str *cljs-ns*) (fn [] ~@body)))
@@ -42,3 +43,16 @@
 
 (defmacro wait-for-async [msg]
   `(methojure.test.core/wait-for-async ~(str *cljs-ns*) ~msg))
+
+(defmacro are
+  [argv expr & args]
+  (if (or
+       ;; (are [] true) is meaningless but ok
+       (and (empty? argv) (empty? args))
+       ;; Catch wrong number of args
+       (and (pos? (count argv))
+            (pos? (count args))
+            (zero? (mod (count args) (count argv)))))
+    `(temp/do-template ~argv (is ~expr) ~@args)
+    (throw (IllegalArgumentException.
+            "The number of args doesn't match are's argv."))))

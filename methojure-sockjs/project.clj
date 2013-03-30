@@ -9,7 +9,7 @@
   :resource-paths ["server/resources" "client/resources"]
 
   :dependencies [[org.clojure/clojure "1.5.0"]
-                 [http-kit "2.0.0-SNAPSHOT"]
+                 [http-kit "2.0.0"]
                  [cheshire "5.0.2"]
                  [compojure "1.1.5"]
                  [methojure/methojure-test "0.1.0-SNAPSHOT"]]

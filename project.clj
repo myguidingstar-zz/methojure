@@ -10,4 +10,5 @@
   
   :sub ["methojure-sockjs"
         "methojure-test"
-        "methojure-communication"])
+        "methojure-communication"
+        "methojure-mongo"])

@@ -13,7 +13,7 @@
   :dependencies [[org.clojure/clojure "1.5.0"]
                  [methojure/methojure-communication "0.1.0-SNAPSHOT"]
                  [methojure/methojure-test "0.1.0-SNAPSHOT"]
-                 [com.novemberain/monger "1.5.0-rc1"]
+                 [com.novemberain/monger "1.5.0"]
                  [org.clojure/data.json "0.2.1"]]
 
   :plugins [[lein-cljsbuild "0.3.0"]

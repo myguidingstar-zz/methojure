@@ -1,19 +1,11 @@
 (ns methojure.mongo.minimongo.collection
   (:refer-clojure :exclude [find remove count])
+  (:use [methojure.mongo.api :only [IMongoCursor fetch count
+                                    IMongoCollection find find-one remove
+                                    insert update]])
   (:require [methojure.mongo.minimongo.selector :as ms]
             [methojure.mongo.minimongo.modifier :as mm]
             [methojure.mongo.minimongo.diff :as md]))
-
-(defprotocol IMongoCursor
-  (fetch [this])
-  (count [this]))
-
-(defprotocol IMongoCollection
-  (find [this] [this selector] [this selector options])
-  (find-one [this] [this selector] [this selector options])
-  (insert [this doc])
-  (remove [this selector])
-  (update [this selector mod] [this selector mod options]))
 
 (defn- query [selector docs options]
   (let [a (filter selector (vals @docs))
@@ -57,12 +49,15 @@
          (-remove-watch [this k] (do (swap! watcher dissoc k) this)))
 
 (defn with-query-notification [queries f]
-  (let [data (map #(hash-map :query-id %) (keys @queries))
+  (let [data (doall
+              (map #(hash-map :query-id %) (keys @queries)))
         data (doall
-              (map #(assoc % :before (fetch (@queries (:query-id %)))) data))
+              (map #(assoc % :before
+                           (doall (fetch (@queries (:query-id %))))) data))
         res (f) ;; <-- side effect
         data (doall
-              (map #(assoc % :after (fetch (@queries (:query-id %)))) data))]
+              (map #(assoc % :after
+                           (doall (fetch (@queries (:query-id %))))) data))]
     (doseq [entry data
             :let [diff (md/diff (:before entry) (:after entry))]]
       (doseq [[_ f] @(.-watcher (@queries (:query-id entry)))]
